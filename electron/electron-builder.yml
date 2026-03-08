@@ -1,0 +1,40 @@
+appId: com.fulcrum.desktop
+productName: Fulcrum
+copyright: Copyright 2026
+electronVersion: 33.4.11
+
+directories:
+  output: release
+  buildResources: ../resources
+
+files:
+  - dist/*.js
+  - dist/*.js.map
+  - package.json
+
+extraResources:
+  - from: ../frontend/dist
+    to: frontend/dist
+
+publish:
+  provider: github
+  owner: finncshannon
+  repo: Launcher
+  releaseType: release
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: ../resources/icon.ico
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: ../resources/icon.ico
+  uninstallerIcon: ../resources/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Fulcrum

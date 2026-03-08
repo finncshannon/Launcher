@@ -1,0 +1,9 @@
+node_modules/
+electron/dist/
+electron/release/
+frontend/dist/
+*.exe
+*.blockmap
+*.log
+.DS_Store
+Thumbs.db

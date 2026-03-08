@@ -1,0 +1,17 @@
+{
+  "name": "fulcrum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal software hub for installing, updating, and launching apps.",
+  "workspaces": ["electron", "frontend"],
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:electron": "cd electron && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:electron": "cd electron && npm run build",
+    "build": "npm run build:frontend && npm run build:electron",
+    "package": "npm run build:frontend && npm run build:electron && cd electron && npx electron-builder --config electron-builder.yml --win",
+    "release": "npm run build:frontend && npm run build:electron && cd electron && npx electron-builder --config electron-builder.yml --win --publish always"
+  },
+  "engines": { "node": ">=18.0.0" }
+}
