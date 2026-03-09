@@ -38,8 +38,8 @@ export async function checkForAppUpdates(): Promise<UpdateCheckResult[]> {
 
 export async function checkForLauncherUpdate(): Promise<{ available: boolean; version?: string; downloadUrl?: string }> {
   const tempEntry: AppEntry = {
-    id: 'shannon-launcher',
-    name: 'Shannon Launcher',
+    id: 'fulcrum',
+    name: 'Fulcrum',
     description: '',
     longDescription: '',
     github: LAUNCHER_GITHUB,

@@ -14,6 +14,6 @@ export const APP_REGISTRY: AppEntry[] = [
     icon: 'finance-app.png',
     installSize: '~150 MB',
     tags: ['finance', 'valuation', 'desktop'],
-    executableName: 'Finance App.exe',
+    executableName: 'Spectre.exe',
   },
 ];

@@ -2,7 +2,8 @@ import { app, BrowserWindow, screen } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { setupIPC } from './ipc';
-import { readConfig } from './config';
+import { readConfig, writeConfig } from './config';
+import { APP_REGISTRY } from './registry';
 import { checkForAppUpdates, checkForLauncherUpdate } from './updater';
 import { cleanupStaleDownloads } from './downloader';
 import { createTray, destroyTray } from './tray';
@@ -207,6 +208,97 @@ app.whenReady().then(async () => {
   console.log('[startup] Fulcrum starting...');
   cleanupStaleDownloads();
   setupIPC(() => mainWindow);
+
+  // Verify installed apps (repairs broken records from failed exe detection)
+  const startupConfig = readConfig();
+  console.log(`[startup] Config path: ${path.join(app.getPath('userData'), 'config.json')}`);
+  console.log(`[startup] defaultInstallDir: ${startupConfig.settings.defaultInstallDir}`);
+  console.log(`[startup] installedApps keys: ${JSON.stringify(Object.keys(startupConfig.installedApps))}`);
+
+  for (const entry of APP_REGISTRY) {
+    const installed = startupConfig.installedApps[entry.id];
+    console.log(`[startup] Checking ${entry.id}: installed=${!!installed}, executableName=${entry.executableName}`);
+
+    if (installed) {
+      console.log(`[startup]   installPath: ${installed.installPath}`);
+      console.log(`[startup]   executablePath: ${installed.executablePath}`);
+      console.log(`[startup]   installPath exists: ${fs.existsSync(installed.installPath)}`);
+      console.log(`[startup]   executablePath exists: ${fs.existsSync(installed.executablePath)}`);
+    }
+
+    if (installed && !fs.existsSync(installed.executablePath)) {
+      // Case 1: In config but exe path is wrong — try to find the real exe
+      let searchDir = installed.installPath;
+      let searchDirExists = fs.existsSync(searchDir);
+
+      // Case 1b: installPath itself doesn't exist — fall back to default install dir
+      if (!searchDirExists) {
+        const fallbackDir = path.join(startupConfig.settings.defaultInstallDir, entry.id);
+        console.log(`[startup]   installPath gone, checking fallback: ${fallbackDir}`);
+        if (fs.existsSync(fallbackDir)) {
+          searchDir = fallbackDir;
+          searchDirExists = true;
+        }
+      }
+
+      if (searchDirExists) {
+        const files = fs.readdirSync(searchDir);
+        const exeFiles = files.filter(f => f.endsWith('.exe') && !f.startsWith('Uninstall'));
+        console.log(`[startup]   Found exe files in ${searchDir}: ${JSON.stringify(exeFiles)}`);
+        if (exeFiles.length > 0) {
+          const repairConfig = readConfig();
+          repairConfig.installedApps[entry.id].installPath = searchDir;
+          repairConfig.installedApps[entry.id].executablePath = path.join(searchDir, exeFiles[0]);
+          writeConfig(repairConfig);
+          console.log(`[startup] Repaired install record for ${entry.id}: ${exeFiles[0]} at ${searchDir}`);
+        }
+      } else {
+        // installPath AND fallback both gone — remove stale config entry
+        console.log(`[startup]   No install directory found, removing stale config entry for ${entry.id}`);
+        const repairConfig = readConfig();
+        delete repairConfig.installedApps[entry.id];
+        writeConfig(repairConfig);
+      }
+    } else if (!installed) {
+      // Case 2: Not in config at all — check if app is actually installed on disk
+      const installDir = path.join(startupConfig.settings.defaultInstallDir, entry.id);
+      console.log(`[startup]   Not in config, checking default dir: ${installDir}`);
+      console.log(`[startup]   Default dir exists: ${fs.existsSync(installDir)}`);
+      if (fs.existsSync(installDir)) {
+        const files = fs.readdirSync(installDir);
+        const exeFiles = files.filter(f => f.endsWith('.exe') && !f.startsWith('Uninstall'));
+        console.log(`[startup]   Found exe files: ${JSON.stringify(exeFiles)}`);
+        if (exeFiles.length > 0) {
+          // Try to determine version from the app's package.json
+          let version = 'unknown';
+          const appPkgPath = path.join(installDir, 'resources', 'app', 'package.json');
+          try {
+            if (fs.existsSync(appPkgPath)) {
+              const appPkg = JSON.parse(fs.readFileSync(appPkgPath, 'utf-8'));
+              if (appPkg.version) {
+                version = appPkg.version;
+                console.log(`[startup]   Detected version from package.json: ${version}`);
+              }
+            }
+          } catch {
+            console.log(`[startup]   Could not read version from package.json`);
+          }
+
+          const repairConfig = readConfig();
+          repairConfig.installedApps[entry.id] = {
+            version,
+            installPath: installDir,
+            installedAt: new Date().toISOString(),
+            lastLaunched: null,
+            executablePath: path.join(installDir, exeFiles[0]),
+          };
+          writeConfig(repairConfig);
+          console.log(`[startup] Discovered installed app ${entry.id} v${version} at ${installDir} \u2014 exe: ${exeFiles[0]}`);
+        }
+      }
+    }
+  }
+
   createWindow();
 
   if (mainWindow) {

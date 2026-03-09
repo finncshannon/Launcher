@@ -64,15 +64,27 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
         initialized: true,
       });
 
-      // Startup verification — detect broken installs
+      // Startup verification — detect broken installs AND discover untracked installs
+      let configChanged = false;
       for (const appState of apps) {
+        const valid = await window.electronAPI.verifyInstallation(appState.entry.id);
         if (appState.installed) {
-          const valid = await window.electronAPI.verifyInstallation(appState.entry.id);
+          // App is in config — check if the install is still valid
           if (!valid) {
             console.warn(`[store] Broken installation: ${appState.entry.id}`);
             setTimeout(() => get().updateAppStatus(appState.entry.id, 'broken'), 0);
           }
+        } else if (valid) {
+          // App was NOT in config but verifyInstallation found it on disk and repaired
+          console.log(`[store] Discovered untracked installation: ${appState.entry.id}`);
+          configChanged = true;
         }
+      }
+
+      // If any installs were discovered/repaired, re-read config to pick up changes
+      if (configChanged) {
+        console.log('[store] Config was repaired during verification, refreshing...');
+        await get().refreshConfig();
       }
 
       // Subscribe to push events from main process

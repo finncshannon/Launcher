@@ -1,4 +1,6 @@
 import { ipcMain, app, dialog, shell, BrowserWindow } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 import { readConfig, writeConfig, updateSettings } from './config';
 import { APP_REGISTRY } from './registry';
 import { fetchLatestRelease } from './github';
@@ -102,6 +104,7 @@ export function setupIPC(getMainWindow: () => BrowserWindow | null): void {
       // Run installer
       const result = await installApp(entry, installerPath, options.installDir);
       result.version = release.version;
+      console.log(`[install] installApp returned: success=${result.success}, error=${result.error || 'none'}, executablePath=${result.executablePath}`);
 
       if (result.success) {
         // Update config
@@ -208,7 +211,45 @@ export function setupIPC(getMainWindow: () => BrowserWindow | null): void {
   ipcMain.handle('app:verify-installation', (_event, appId: string) => {
     const config = readConfig();
     const installed = config.installedApps[appId];
-    if (!installed) return false;
+    if (!installed) {
+      // Not in config — check if it might be installed anyway (broken install record)
+      const entry = APP_REGISTRY.find(e => e.id === appId);
+      if (!entry) return false;
+
+      const installDir = path.join(config.settings.defaultInstallDir, appId);
+      console.log(`[verify] ${appId} not in config, checking ${installDir}`);
+      if (!fs.existsSync(installDir)) return false;
+
+      // Scan for exe
+      const files = fs.readdirSync(installDir);
+      const exeFiles = files.filter(f => f.endsWith('.exe') && !f.startsWith('Uninstall'));
+      if (exeFiles.length === 0) return false;
+
+      // Try to determine version from the app's package.json
+      let version = 'unknown';
+      const appPkgPath = path.join(installDir, 'resources', 'app', 'package.json');
+      try {
+        if (fs.existsSync(appPkgPath)) {
+          const appPkg = JSON.parse(fs.readFileSync(appPkgPath, 'utf-8'));
+          if (appPkg.version) {
+            version = appPkg.version;
+          }
+        }
+      } catch { /* ignore */ }
+
+      // Found an exe — repair the config
+      const exePath = path.join(installDir, exeFiles[0]);
+      config.installedApps[appId] = {
+        version,
+        installPath: installDir,
+        installedAt: new Date().toISOString(),
+        lastLaunched: null,
+        executablePath: exePath,
+      };
+      writeConfig(config);
+      console.log(`[verify] Repaired install record for ${appId} v${version} — found ${exeFiles[0]}`);
+      return true;
+    }
     return verifyInstallation(installed.executablePath);
   });
 

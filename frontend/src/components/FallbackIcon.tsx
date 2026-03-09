@@ -1,4 +1,11 @@
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
+
+import financeAppIcon from '../assets/finance-app.png';
+
+const ICON_MAP: Record<string, string> = {
+  'finance-app': financeAppIcon,
+};
 
 interface FallbackIconProps {
   name: string;
@@ -7,6 +14,21 @@ interface FallbackIconProps {
 }
 
 export default function FallbackIcon({ name, appId, size = 'sm' }: FallbackIconProps) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const iconSrc = ICON_MAP[appId];
+
+  if (iconSrc && !imgFailed) {
+    return (
+      <img
+        src={iconSrc}
+        alt={name}
+        className={cn('w-full h-full object-cover')}
+        onError={() => setImgFailed(true)}
+      />
+    );
+  }
+
+  // Letter fallback
   const hue = Array.from(appId).reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
   const letter = name.charAt(0).toUpperCase();
   return (

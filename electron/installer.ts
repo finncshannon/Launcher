@@ -95,24 +95,71 @@ export async function installApp(
 
     // Verify the executable exists after install
     const executablePath = path.join(appInstallDir, entry.executableName);
-    if (!fs.existsSync(executablePath)) {
+    console.log(`[installer] Checking for executable: ${executablePath}`);
+    console.log(`[installer] fs.existsSync result: ${fs.existsSync(executablePath)}`);
+
+    // Case-insensitive fallback: Windows FS is case-insensitive but path.join preserves case
+    let resolvedExePath = executablePath;
+    if (!fs.existsSync(resolvedExePath)) {
+      try {
+        const dirFiles = fs.readdirSync(appInstallDir);
+        const caseMatch = dirFiles.find(f => f.toLowerCase() === entry.executableName.toLowerCase());
+        if (caseMatch) {
+          resolvedExePath = path.join(appInstallDir, caseMatch);
+          console.log(`[installer] Case-insensitive match found: ${caseMatch}`);
+        }
+      } catch { /* dir may not exist yet */ }
+    }
+
+    if (!fs.existsSync(resolvedExePath)) {
+      // Fallback: scan for any .exe in the install directory
+      // NSIS may have produced the exe with a different name (e.g. after a rebrand)
+      const files = fs.readdirSync(appInstallDir);
+      console.log(`[installer] Directory contents: ${JSON.stringify(files)}`);
+      const exeFiles = files.filter(f => f.endsWith('.exe') && !f.startsWith('Uninstall'));
+
+      if (exeFiles.length === 1) {
+        // Exactly one exe found — use it
+        const foundExe = path.join(appInstallDir, exeFiles[0]);
+        console.log(`[installer] Expected ${entry.executableName} not found, using ${exeFiles[0]}`);
+        return {
+          success: true,
+          appId: entry.id,
+          version: '',
+          installPath: appInstallDir,
+          executablePath: foundExe,
+        };
+      } else if (exeFiles.length > 1) {
+        // Multiple exes — log them all but still fail (can't guess which is the main one)
+        console.warn(`[installer] Expected ${entry.executableName} not found. Found multiple exes: ${exeFiles.join(', ')}`);
+        return {
+          success: false,
+          appId: entry.id,
+          version: '',
+          installPath: appInstallDir,
+          executablePath,
+          error: `Expected executable ${entry.executableName} not found. Found: ${exeFiles.join(', ')}. The app may need to be reinstalled after the next release.`,
+        };
+      }
+
+      // No exe files found at all
       return {
         success: false,
         appId: entry.id,
         version: '',
         installPath: appInstallDir,
         executablePath,
-        error: `Installation completed but executable not found: ${entry.executableName}`,
+        error: `Installation completed but no executable found in ${appInstallDir}. The installer may have placed files in an unexpected location.`,
       };
     }
 
-    console.log(`[installer] Verified executable: ${executablePath}`);
+    console.log(`[installer] Verified executable: ${resolvedExePath}`);
     return {
       success: true,
       appId: entry.id,
       version: '',
       installPath: appInstallDir,
-      executablePath,
+      executablePath: resolvedExePath,
     };
   } finally {
     // Clean up downloaded installer
