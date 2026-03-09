@@ -3,7 +3,7 @@ import { useAppStore } from '@/stores/appStore';
 import { formatDate } from '@/lib/utils';
 import type { AppState } from '@/types';
 import FallbackIcon from './FallbackIcon';
-import InstallProgress from './InstallProgress';
+import InstallProgress, { FullInstallView } from './InstallProgress';
 import { showToast } from './Toast';
 
 function CloseIcon() {
@@ -175,11 +175,22 @@ export default function AppDetail() {
 
   if (!app) return null;
 
-  const { entry, installed } = app;
+  const { entry, installed, downloadProgress } = app;
+  const isActiveInstall = app.status === 'installing' || app.status === 'updating';
+
+  const handleCancel = () => {
+    window.electronAPI.cancelInstall(entry.id);
+  };
 
   return (
     <div className="w-[480px] h-full bg-[#1E1E1E] border-l border-[#2A2A2A] flex flex-col shrink-0 animate-slideIn overflow-y-auto">
+      {/* Zebra-striped progress bar — always visible during install */}
+      {isActiveInstall && (
+        <div className="w-full h-2 bg-[#3B82F6] zebra-bar shrink-0" />
+      )}
+
       <div className="p-6">
+        {/* Header — always visible */}
         <div className="flex items-start justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="w-24 h-24 bg-[#1A1A1A] rounded-2xl overflow-hidden shrink-0">
@@ -205,39 +216,50 @@ export default function AppDetail() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {entry.tags.map((tag) => (
-            <span key={tag} className="px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#A0A0A0] text-[10px] font-medium">
-              {tag}
-            </span>
-          ))}
-          <span className="px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#A0A0A0] text-[10px] font-medium">
-            {entry.installSize}
-          </span>
-        </div>
+        {/* When actively installing — show the full hero progress view */}
+        {isActiveInstall ? (
+          <FullInstallView
+            appName={entry.name}
+            progress={downloadProgress}
+            onCancel={handleCancel}
+          />
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {entry.tags.map((tag) => (
+                <span key={tag} className="px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#A0A0A0] text-[10px] font-medium">
+                  {tag}
+                </span>
+              ))}
+              <span className="px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#A0A0A0] text-[10px] font-medium">
+                {entry.installSize}
+              </span>
+            </div>
 
-        {app.status === 'not-installed' && app.latestRelease && (
-          <p className="text-[#666666] text-xs mb-4">
-            Latest: v{app.latestRelease.version} &bull; Released {formatDate(app.latestRelease.publishedAt)}
-          </p>
-        )}
+            {app.status === 'not-installed' && app.latestRelease && (
+              <p className="text-[#666666] text-xs mb-4">
+                Latest: v{app.latestRelease.version} &bull; Released {formatDate(app.latestRelease.publishedAt)}
+              </p>
+            )}
 
-        <p className="text-sm text-[#A0A0A0] leading-relaxed mb-6">
-          {entry.longDescription}
-        </p>
-
-        {app.status === 'update-available' && app.latestRelease && (
-          <div className="rounded-lg bg-[#141414] border border-[#2A2A2A] p-4 mb-6">
-            <h3 className="text-[#F5F5F5] text-sm font-semibold mb-2">
-              What's new in v{app.latestRelease.version}
-            </h3>
-            <p className="text-[#A0A0A0] text-xs leading-relaxed whitespace-pre-line">
-              {app.latestRelease.body || 'No release notes available.'}
+            <p className="text-sm text-[#A0A0A0] leading-relaxed mb-6">
+              {entry.longDescription}
             </p>
-          </div>
-        )}
 
-        <ActionButtons app={app} />
+            {app.status === 'update-available' && app.latestRelease && (
+              <div className="rounded-lg bg-[#141414] border border-[#2A2A2A] p-4 mb-6">
+                <h3 className="text-[#F5F5F5] text-sm font-semibold mb-2">
+                  What's new in v{app.latestRelease.version}
+                </h3>
+                <p className="text-[#A0A0A0] text-xs leading-relaxed whitespace-pre-line">
+                  {app.latestRelease.body || 'No release notes available.'}
+                </p>
+              </div>
+            )}
+
+            <ActionButtons app={app} />
+          </>
+        )}
       </div>
     </div>
   );

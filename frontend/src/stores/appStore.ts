@@ -9,14 +9,14 @@ interface AppStoreState {
   config: LauncherConfig | null;
   launcherVersion: string;
   launcherUpdateAvailable: { version: string; downloadUrl: string } | null;
-  activeView: 'library' | 'settings';
+  activeView: 'library' | 'settings' | 'downloads';
   updateCheckInProgress: boolean;
   isFirstRun: boolean;
   initialized: boolean;
 
   initialize: () => Promise<void>;
   setSelectedApp: (appId: string | null) => void;
-  setActiveView: (view: 'library' | 'settings') => void;
+  setActiveView: (view: 'library' | 'settings' | 'downloads') => void;
   updateAppStatus: (appId: string, status: AppStatus) => void;
   updateDownloadProgress: (progress: DownloadProgress) => void;
   updateAppRelease: (appId: string, release: ReleaseInfo) => void;
@@ -85,6 +85,8 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
           if (currentApp?.installed) {
             get().updateAppStatus(data.appId, 'update-available');
           }
+        } else if (data.status === 'installing' || data.status === 'updating' || data.status === 'installed' || data.status === 'not-installed') {
+          get().updateAppStatus(data.appId, data.status as AppStatus);
         }
       });
 

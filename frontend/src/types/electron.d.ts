@@ -22,6 +22,9 @@ declare global {
       verifyInstallation: (appId: string) => Promise<boolean>;
       selectDirectory: (defaultPath: string) => Promise<string | null>;
       onDownloadProgress: (callback: (data: import('./index').DownloadProgress) => void) => () => void;
+      windowMinimize: () => Promise<void>;
+      windowMaximize: () => Promise<void>;
+      windowClose: () => Promise<void>;
       launchApp: (appId: string) => Promise<{ success: boolean; error?: string }>;
       openFolder: (appId: string) => Promise<void>;
       openExternal: (url: string) => Promise<void>;

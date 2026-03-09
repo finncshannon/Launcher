@@ -54,7 +54,7 @@ interface ContextMenuProps {
 
 function ContextMenu({ app, x, y, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
-  const { setSelectedApp, config, refreshConfig, updateAppStatus } = useAppStore();
+  const { setSelectedApp, refreshConfig, updateAppStatus } = useAppStore();
   const isInstalled = app.status === 'installed' || app.status === 'update-available' || app.status === 'launching';
 
   useEffect(() => {

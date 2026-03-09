@@ -174,14 +174,14 @@ export function setupIPC(getMainWindow: () => BrowserWindow | null): void {
     cancelDownload(appId);
   });
 
-  ipcMain.handle('app:uninstall', (_event, appId: string) => {
+  ipcMain.handle('app:uninstall', async (_event, appId: string) => {
     const config = readConfig();
     const installed = config.installedApps[appId];
     if (!installed) {
       return { success: false, error: 'App is not installed' };
     }
 
-    const result = uninstallApp(appId, installed.installPath);
+    const result = await uninstallApp(appId, installed.installPath);
     if (result.success) {
       delete config.installedApps[appId];
       writeConfig(config);
@@ -235,6 +235,24 @@ export function setupIPC(getMainWindow: () => BrowserWindow | null): void {
     } else {
       console.warn(`[ipc] Blocked non-HTTPS URL: ${url}`);
     }
+  });
+
+  // --- Window Controls ---
+  ipcMain.handle('window:minimize', () => {
+    getMainWindow()?.minimize();
+  });
+
+  ipcMain.handle('window:maximize', () => {
+    const win = getMainWindow();
+    if (win?.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win?.maximize();
+    }
+  });
+
+  ipcMain.handle('window:close', () => {
+    getMainWindow()?.close();
   });
 
   console.log('[ipc] All handlers registered');

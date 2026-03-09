@@ -15,7 +15,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // --- Configuration ---
-app.name = 'Shannon Launcher';
+app.name = 'Fulcrum';
 const DEV_SERVER_URL = 'http://localhost:5173';
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -89,7 +89,7 @@ function loadWindowState(): WindowState {
 }
 
 function saveWindowState(): void {
-  if (!mainWindow) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
 
   const state: WindowState = {
     isMaximized: mainWindow.isMaximized(),
@@ -117,6 +117,10 @@ function saveWindowState(): void {
 function createWindow(): void {
   const state = loadWindowState();
 
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'icon.ico')
+    : path.join(__dirname, '..', 'resources', 'icon.ico');
+
   mainWindow = new BrowserWindow({
     width: state.width,
     height: state.height,
@@ -126,6 +130,9 @@ function createWindow(): void {
     minHeight: 550,
     backgroundColor: '#0D0D0D',
     show: false,
+    frame: false,
+    titleBarStyle: 'hidden',
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -153,6 +160,10 @@ function createWindow(): void {
       }
     }
     saveWindowState();
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 
   // Keyboard shortcuts (window-scoped)
@@ -193,7 +204,7 @@ app.on('before-quit', () => {
 });
 
 app.whenReady().then(async () => {
-  console.log('[startup] Shannon Launcher starting...');
+  console.log('[startup] Fulcrum starting...');
   cleanupStaleDownloads();
   setupIPC(() => mainWindow);
   createWindow();

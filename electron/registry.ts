@@ -3,7 +3,7 @@ import { AppEntry } from './types';
 export const APP_REGISTRY: AppEntry[] = [
   {
     id: 'finance-app',
-    name: 'Finance App',
+    name: 'Spectre',
     description: 'Professional-grade equity valuation and portfolio management.',
     longDescription:
       'A comprehensive desktop application for DCF modeling, stock screening, portfolio tracking, and company research. Built for analysts and individual investors who need institutional-quality tools.',

@@ -45,6 +45,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectDirectory: (defaultPath: string): Promise<string | null> =>
     ipcRenderer.invoke('dialog:select-directory', defaultPath),
 
+  // Window controls
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window:maximize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
+
   // Events (Main -> Renderer)
   onDownloadProgress: (callback: (data: any) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, data: any) => callback(data);

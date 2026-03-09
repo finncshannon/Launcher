@@ -12,6 +12,15 @@ function GridIcon() {
   );
 }
 
+function DownloadIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2v8M8 10l-3-3M8 10l3-3" />
+      <path d="M3 12v1.5h10V12" />
+    </svg>
+  );
+}
+
 function GearIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -26,9 +35,10 @@ interface NavItemProps {
   label: string;
   active: boolean;
   onClick: () => void;
+  badge?: number;
 }
 
-function NavItem({ icon, label, active, onClick }: NavItemProps) {
+function NavItem({ icon, label, active, onClick, badge }: NavItemProps) {
   return (
     <button
       onClick={onClick}
@@ -40,7 +50,12 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
       )}
     >
       {icon}
-      {label}
+      <span className="flex-1 text-left">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#3B82F6] text-white text-[10px] font-bold flex items-center justify-center">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
@@ -51,10 +66,20 @@ export default function Sidebar() {
   const allReleasesNull = initialized && !updateCheckInProgress &&
     apps.length > 0 && apps.every(a => a.latestRelease === null);
 
+  const activeDownloadCount = apps.filter(
+    (a) => a.status === 'installing' || a.status === 'updating'
+  ).length;
+
   return (
     <div className="w-[200px] h-full bg-[#141414] border-r border-[#2A2A2A] flex flex-col shrink-0">
-      <div className="px-4 pt-5 pb-6">
-        <div className="text-lg font-bold text-[#F5F5F5]">Fulcrum</div>
+      <div className="px-4 pt-4 pb-5 flex items-center gap-2.5">
+        <img
+          src={new URL('../assets/logo.png', import.meta.url).href}
+          alt="Fulcrum"
+          className="h-7 w-7 object-contain"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+        <span className="text-lg font-bold text-[#F5F5F5]">Fulcrum</span>
       </div>
 
       <nav className="flex-1 flex flex-col gap-0.5">
@@ -63,6 +88,13 @@ export default function Sidebar() {
           label="Library"
           active={activeView === 'library'}
           onClick={() => setActiveView('library')}
+        />
+        <NavItem
+          icon={<DownloadIcon />}
+          label="Downloads"
+          active={activeView === 'downloads'}
+          onClick={() => setActiveView('downloads')}
+          badge={activeDownloadCount}
         />
         <NavItem
           icon={<GearIcon />}
