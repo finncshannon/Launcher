@@ -17,7 +17,14 @@
       "Read(//c/Claude Access Point/Launcher/electron/**)",
       "Bash(powershell:*)",
       "Bash(powershell.exe:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(rm:*)",
+      "Bash(timeout 10 npx electron:*)",
+      "Bash(gh auth:*)",
+      "Bash(where gh.exe)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(echo:*)"
     ]
   }
 }

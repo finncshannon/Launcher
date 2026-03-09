@@ -1,0 +1,5 @@
+owner: finncshannon
+repo: Launcher
+provider: github
+releaseType: release
+updaterCacheDirName: fulcrum-electron-updater

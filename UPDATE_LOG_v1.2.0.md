@@ -1,8 +1,9 @@
 # Update Log — Fulcrum v1.2.0
 
-**Status:** Ready for Testing
+**Status:** Packaged — awaiting GitHub Release upload
 **Branch:** main
 **Started:** 2026-03-09
+**Commit:** 6e43563 (pushed to origin/main)
 
 ---
 
@@ -41,9 +42,9 @@
 ---
 
 ## Version Bump Checklist
-- [ ] All `package.json` versions updated
-- [ ] TypeScript compiles clean
-- [ ] App runs without errors
-- [ ] Packaged build succeeds
-- [ ] Git commit + push
-- [ ] GitHub Release created
+- [x] All `package.json` versions updated
+- [x] TypeScript compiles clean
+- [x] App runs without errors (smoke test passed — all [startup] logs confirmed)
+- [x] Packaged build succeeds (`electron/release-v120/Fulcrum Setup 1.2.0.exe`)
+- [x] Git commit + push (6e43563 → origin/main)
+- [ ] GitHub Release created (needs `gh` CLI or manual upload)
